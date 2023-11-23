@@ -56,13 +56,13 @@ def add_season_feature(data):
     """
     def get_season(month):
         if month in [3, 4, 5]:
-            return '春季'
+            return 'Spring'
         elif month in [6, 7, 8]:
-            return '夏季'
+            return 'Summer'
         elif month in [9, 10, 11]:
-            return '秋季'
+            return 'Fall'
         else:
-            return '冬季'
+            return 'Winter'
 
     data['season'] = data['month'].apply(get_season)
     return data
@@ -90,11 +90,11 @@ def add_month_phase_feature(data, date_column):
 
     def categorize_month_phase(day):
         if day <= 10:
-            return '月初'
+            return 'Early Month'
         elif day <= 20:
-            return '月中'
+            return 'Mid Month'
         else:
-            return '月末'
+            return 'End of Month'
 
     data['month_phase'] = data[date_column].dt.day.apply(categorize_month_phase)
     return data

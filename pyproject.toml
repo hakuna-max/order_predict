@@ -17,6 +17,8 @@ seaborn = "^0.13.0"
 plotly = "^5.18.0"
 jupyter = "^1.0.0"
 holidays = "^0.37"
+statsmodels = "^0.14.0"
+keras = "^2.15.0"
 
 
 [tool.poetry.group.dev.dependencies]
