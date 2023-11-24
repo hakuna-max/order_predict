@@ -142,6 +142,7 @@ def perform_feature_engineering(data, date_column):
     data = add_month_phase_feature(data, date_column)
     # Mark promotion days
     data = mark_promotions(data)
+    print("Feature engineering is complete")
     return data
 
 

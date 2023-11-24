@@ -5,7 +5,7 @@ import numpy as np
 def load_data(file_path):
     """
     Load data from a CSV file.
-    
+
     Parameters:
     file_path (str): The path to the CSV file to be loaded.
 
@@ -20,7 +20,7 @@ def load_data(file_path):
     except Exception as e:
         print(f"Loading data error: {e}")
         return None
-    
+
 
 def preprocess_data(data):
     """
@@ -33,18 +33,20 @@ def preprocess_data(data):
     pandas.DataFrame: The preprocessed DataFrame.
     """
     # Convert date format
-    if 'order_date' in data.columns:
-        data['order_date'] = pd.to_datetime(data['order_date'])
+    if "order_date" in data.columns:
+        data["order_date"] = pd.to_datetime(data["order_date"])
 
     # Encode categorical variables
-    if 'sales_chan_name' in data.columns:
-        data['sales_chan_name'] = data['sales_chan_name'].map({'offline': 0, 'online': 1})
-    
+    if "sales_chan_name" in data.columns:
+        data["sales_chan_name"] = data["sales_chan_name"].map(
+            {"offline": 0, "online": 1}
+        )
+
     # Handle outliers for numeric columns
     numeric_cols = data.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         data[col] = handle_outliers(data[col])
-
+    print("Data preprocessing is complete")
     return data
 
 
@@ -67,7 +69,7 @@ def handle_outliers(series):
     # Capping the outliers
     series = np.where(series < lower_bound, lower_bound, series)
     series = np.where(series > upper_bound, upper_bound, series)
-    
+
     return series
 
 
@@ -86,7 +88,7 @@ def main():
     print("preprocessing raw data is done!")
 
     # Optionally, save or return the preprocessed data
-    preprocessed_data.to_csv('../data/processed/processed_data.csv', index=False)
+    preprocessed_data.to_csv("../data/processed/processed_data.csv", index=False)
     print("Preprocessed data is saved in folder data/processed")
     return preprocessed_data
 

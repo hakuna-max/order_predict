@@ -22,12 +22,12 @@ def plot_histograms(data):
     Parameters:
     data (pandas.DataFrame): The DataFrame for which to plot histograms.
     """
-    for column in data.select_dtypes(include=['float64', 'int64']).columns:
+    for column in data.select_dtypes(include=["float64", "int64"]).columns:
         plt.figure(figsize=(8, 4))
         sns.histplot(data[column], kde=True)
-        plt.title(f'Distribution of {column}')
+        plt.title(f"Distribution of {column}")
         plt.xlabel(column)
-        plt.ylabel('Frequency')
+        plt.ylabel("Frequency")
         plt.show()
 
 
@@ -38,12 +38,12 @@ def plot_time_trend(data):
     Parameters:
     data (pandas.DataFrame): The DataFrame to analyze.
     """
-    if 'order_date' in data.columns:
+    if "order_date" in data.columns:
         plt.figure(figsize=(10, 5))
-        data.groupby('order_date').size().plot()
-        plt.title('Trend Over Time')
-        plt.xlabel('Date')
-        plt.ylabel('Number of Orders')
+        data.groupby("order_date").size().plot()
+        plt.title("Trend Over Time")
+        plt.xlabel("Date")
+        plt.ylabel("Number of Orders")
         plt.show()
 
 
@@ -54,16 +54,18 @@ def analyze_time_series(data):
     Parameters:
     data (pandas.DataFrame): The DataFrame on which to perform time series analysis.
     """
-    if 'order_date' in data.columns:
-        data['order_date'] = pd.to_datetime(data['order_date'])
-        data.set_index('order_date', inplace=True)
+    if "order_date" in data.columns:
+        data["order_date"] = pd.to_datetime(data["order_date"])
+        data.set_index("order_date", inplace=True)
 
-        monthly_ord_qty = data['ord_qty'].resample('M').mean()
+        monthly_ord_qty = data["ord_qty"].resample("M").mean()
 
         plt.figure(figsize=(12, 6))
-        monthly_ord_qty.plot(title='Monthly Average Order Quantity', color='blue', marker='o')
-        plt.xlabel('Month')
-        plt.ylabel('Average Order Quantity')
+        monthly_ord_qty.plot(
+            title="Monthly Average Order Quantity", color="blue", marker="o"
+        )
+        plt.xlabel("Month")
+        plt.ylabel("Average Order Quantity")
         plt.show()
 
 
@@ -78,6 +80,7 @@ def perform_eda(data):
     plot_histograms(data)
     plot_time_trend(data)
     analyze_time_series(data)
+    print("EDA is complete")
 
 
 def main():
