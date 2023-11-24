@@ -1,65 +1,94 @@
 import pandas as pd
+import numpy as np
 
 
 def load_data(file_path):
     """
-    加载数据集
-    :param file_path: 数据集文件的路径
-    :return: 返回加载的DataFrame
+    Load data from a CSV file.
+    
+    Parameters:
+    file_path (str): The path to the CSV file to be loaded.
+
+    Returns:
+    pandas.DataFrame: Loaded data as a pandas DataFrame.
     """
     try:
-        data = pd.read_csv(file_path)
-        return data
+        return pd.read_csv(file_path)
     except FileNotFoundError:
-        print(f"文件 {file_path} 未找到。")
+        print(f"file {file_path} does not found。")
         return None
     except Exception as e:
-        print(f"加载数据时发生错误：{e}")
+        print(f"Loading data error: {e}")
         return None
+    
 
-
-def clean_data(data):
+def preprocess_data(data):
     """
-    清洗数据集
-    :param data: pandas DataFrame
-    :return: 清洗后的DataFrame
+    Preprocess the given DataFrame, including date conversion and encoding categorical variables.
+
+    Parameters:
+    data (pandas.DataFrame): The DataFrame to preprocess.
+
+    Returns:
+    pandas.DataFrame: The preprocessed DataFrame.
     """
-    # 日期格式处理
-    data['order_date'] = pd.to_datetime(data['order_date'], errors='coerce')
+    # Convert date format
+    if 'order_date' in data.columns:
+        data['order_date'] = pd.to_datetime(data['order_date'])
 
-    # 价格和数量的合理性检查
-    data = data[data['item_price'] > 0]
-    data = data[data['ord_qty'] > 0]
-
-    # 缺失值处理（在这个数据集中看起来不是问题）
-    # data = data.dropna()
+    # Encode categorical variables
+    if 'sales_chan_name' in data.columns:
+        data['sales_chan_name'] = data['sales_chan_name'].map({'offline': 0, 'online': 1})
+    
+    # Handle outliers for numeric columns
+    numeric_cols = data.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        data[col] = handle_outliers(data[col])
 
     return data
 
 
+def handle_outliers(series):
+    """
+    Handle outliers in a pandas series using the Interquartile Range (IQR) method.
+
+    Parameters:
+    series (pandas.Series): The pandas series in which to handle outliers.
+
+    Returns:
+    pandas.Series: The series with outliers handled.
+    """
+    Q1 = series.quantile(0.25)
+    Q3 = series.quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    # Capping the outliers
+    series = np.where(series < lower_bound, lower_bound, series)
+    series = np.where(series > upper_bound, upper_bound, series)
+    
+    return series
+
+
 def main():
-    # 修改为您的数据文件路径
-    train_data_path = "../data/raw/order_train0.csv"
-    predict_data_path = "../data/raw/predict_sku0.csv"
+    """
+    Main function to run the data preprocessing steps.
+    """
+    # Example file path (modify as needed)
+    file_path = "../data/raw/order_train0.csv"
 
-    # 加载数据
-    train_data = load_data(train_data_path)
-    predict_data = load_data(predict_data_path)
+    # Load data
+    data = load_data(file_path)
 
-    # 基本的数据预览
-    if train_data is not None:
-        print("训练数据预览：")
-        print(train_data.head())
+    # Preprocess data
+    preprocessed_data = preprocess_data(data)
+    print("preprocessing raw data is done!")
 
-    if predict_data is not None:
-        print("预测数据预览：")
-        print(predict_data.head())
-
-    # 清洗数据
-    if train_data is not None:
-        train_data = clean_data(train_data)
-        print("清洗后的数据预览：")
-        print(train_data.head())
+    # Optionally, save or return the preprocessed data
+    preprocessed_data.to_csv('../data/processed/processed_data.csv', index=False)
+    print("Preprocessed data is saved in folder data/processed")
+    return preprocessed_data
 
 
 if __name__ == "__main__":

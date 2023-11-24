@@ -1,143 +1,170 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
-
 import holidays
 
 
 def extract_date_features(data):
     """
-    从日期中提取特征
+    Extract features from the date.
     :param data: pandas DataFrame
-    :return: 增加日期特征的DataFrame
+    :return: DataFrame with added date features
     """
-    data['year'] = data['order_date'].dt.year
-    data['month'] = data['order_date'].dt.month
-    data['day'] = data['order_date'].dt.day
-    data['weekday'] = data['order_date'].dt.weekday
-    # 根据季节性特征（北半球）分配季节
-    data['season'] = data['month'].apply(lambda x: (x % 12 + 3) // 3)
+    data["year"] = data["order_date"].dt.year
+    data["month"] = data["order_date"].dt.month
+    data["day"] = data["order_date"].dt.day
+    data["weekday"] = data["order_date"].dt.weekday
+    # Assign seasons based on the Northern Hemisphere
+    data["season"] = data["month"].apply(lambda x: (x % 12 + 3) // 3)
     return data
 
 
 def encode_categorical_features(data):
     """
-    对分类特征进行编码
+    Encode categorical features.
     :param data: pandas DataFrame
-    :return: 编码后的DataFrame
+    :return: Encoded DataFrame
     """
-    # 独热编码示例 - 对 'sales_chan_name' 进行编码
+    # One-hot encoding example - encoding 'sales_chan_name'
     encoder = OneHotEncoder(sparse_output=False)
-    sales_chan_encoded = encoder.fit_transform(data[['sales_chan_name']])
-    sales_chan_encoded_df = pd.DataFrame(sales_chan_encoded, columns=encoder.get_feature_names_out(['sales_chan_name']))
-    data = pd.concat([data, sales_chan_encoded_df], axis=1).drop('sales_chan_name', axis=1)
+    sales_chan_encoded = encoder.fit_transform(data[["sales_chan_name"]])
+    sales_chan_encoded_df = pd.DataFrame(
+        sales_chan_encoded, columns=encoder.get_feature_names_out(["sales_chan_name"])
+    )
+    data = pd.concat([data, sales_chan_encoded_df], axis=1).drop(
+        "sales_chan_name", axis=1
+    )
     return data
 
 
-# def encode_all_categorical_features(data):
-#     """
-#     对所有分类特征进行编码
-#     :param data: pandas DataFrame
-#     :return: 编码后的DataFrame
-#     """
-#     categorical_columns = data.select_dtypes(include=['object']).columns
-#     for col in categorical_columns:
-#         if col != date:  # 假设 date 是日期列的名称
-#             encoder = OneHotEncoder(sparse_output=False)
-#             encoded = encoder.fit_transform(data[[col]])
-#             encoded_df = pd.DataFrame(encoded, columns=encoder.get_feature_names_out([col]))
-#             data = pd.concat([data, encoded_df], axis=1).drop(col, axis=1)
-#     return data
+def encode_all_categorical_features(data, date_column):
+    """
+    Encode all categorical features in the DataFrame.
+    :param data: pandas DataFrame
+    :param date_column: The name of the date column, which should not be encoded.
+    :return: DataFrame with encoded categorical features
+    """
+    categorical_columns = data.select_dtypes(include=["object"]).columns
+    for col in categorical_columns:
+        if col != date_column:  # Assuming date_column is the name of the date column
+            encoder = OneHotEncoder(sparse_output=False)
+            encoded = encoder.fit_transform(data[[col]])
+            encoded_df = pd.DataFrame(
+                encoded, columns=encoder.get_feature_names_out([col])
+            )
+            data = pd.concat([data, encoded_df], axis=1).drop(col, axis=1)
+    return data
+
 
 def add_season_feature(data):
     """
-    添加季节特征，假设使用北半球的季节划分：春季（3-5月），夏季（6-8月），秋季（9-11月），冬季（12-2月）
+    Add a season feature, assuming Northern Hemisphere seasons.
     :param data: pandas DataFrame
-    :return: 增加季节特征的DataFrame
+    :return: DataFrame with added season feature
     """
+
     def get_season(month):
         if month in [3, 4, 5]:
-            return 'Spring'
+            return "Spring"
         elif month in [6, 7, 8]:
-            return 'Summer'
+            return "Summer"
         elif month in [9, 10, 11]:
-            return 'Fall'
+            return "Fall"
         else:
-            return 'Winter'
+            return "Winter"
 
-    data['season'] = data['month'].apply(get_season)
+    data["season"] = data["month"].apply(get_season)
     return data
 
 
 def add_holiday_feature(data, years):
     """
-    为数据集添加中国节假日标记
+    Add a holiday feature for the dataset.
     :param data: pandas DataFrame
-    :param years: 包含年份的列表
-    :return: 带有节假日标记的DataFrame
+    :param years: list of years
+    :return: DataFrame with holiday feature
     """
     cn_holidays = holidays.CN(years=years)
-    data['is_holiday'] = data['order_date'].apply(lambda x: x in cn_holidays)
+    data["is_holiday"] = data["order_date"].apply(lambda x: x in cn_holidays)
     return data
 
 
 def add_month_phase_feature(data, date_column):
     """
-    为数据添加月初、月中、月末标记
+    Add a feature for early, mid, or end of the month.
     :param data: pandas DataFrame
-    :param date_column: 用于提取月份阶段的日期列名称
+    :param date_column: name of the date column for extracting month phase
     :return: DataFrame
     """
 
     def categorize_month_phase(day):
         if day <= 10:
-            return 'Early Month'
+            return "Early Month"
         elif day <= 20:
-            return 'Mid Month'
+            return "Mid Month"
         else:
-            return 'End of Month'
+            return "End of Month"
 
-    data['month_phase'] = data[date_column].dt.day.apply(categorize_month_phase)
+    data["month_phase"] = data[date_column].dt.day.apply(categorize_month_phase)
     return data
 
 
 def mark_promotions(data):
     """
-    标记促销活动日
+    Mark promotion days.
     :param data: pandas DataFrame
-    :return: 带有促销活动标记的DataFrame
+    :return: DataFrame with promotion days marked
     """
-    # 定义促销活动日期
-    promo_dates = {
-        (6, 18),  # 618
-        (11, 11),  # 双十一
-        (12, 12)   # 双十二
-    }
-
-    # 标记促销活动日
-    data['is_promo'] = data['order_date'].apply(lambda x: (x.month, x.day) in promo_dates)
+    # Define promotion dates
+    promo_dates = {(6, 18), (11, 11), (12, 12)}  # 618  # Singles Day  # Double Twelve
+    # Mark promotion days
+    data["is_promo"] = data["order_date"].apply(
+        lambda x: (x.month, x.day) in promo_dates
+    )
     return data
 
 
 def perform_feature_engineering(data, date_column):
     """
-    执行特征工程的总函数
+    Perform feature engineering.
     :param data: pandas DataFrame
-    :param date: datetime
-    :return: 经过特征工程处理的DataFrame
+    :param date_column: datetime column name
+    :return: DataFrame with engineered features
     """
     data = extract_date_features(data)
     data = add_season_feature(data)
-    data = encode_categorical_features(data)
-
-    # 创建节假日特征
+    # data = encode_categorical_features(data)
+    # Encode all categorical features
+    data = encode_all_categorical_features(data, date_column)
+    # Create holiday feature
     unique_years = data[date_column].dt.year.unique()
-    unique_years = list(unique_years)
-    data = add_holiday_feature(data, unique_years)
-
-    # 创建月份阶段特征
+    data = add_holiday_feature(data, list(unique_years))
+    # Create month phase feature
     data = add_month_phase_feature(data, date_column)
-
-    # 标记促销活动日
+    # Mark promotion days
     data = mark_promotions(data)
-
     return data
+
+
+def main():
+    # Example file path, modify according to your data
+    file_path = "../data/processed/processed_data.csv"
+    date_column = "order_date"  # Change to your actual date column name
+
+    # Load data
+    data = pd.read_csv(file_path)
+
+    # Convert date column
+    data[date_column] = pd.to_datetime(data[date_column])
+
+    # Perform feature engineering
+    feature_engineered_data = perform_feature_engineering(data, date_column)
+
+    # Optionally, save or return the feature engineered data
+    feature_engineered_data.to_csv(
+        "../data/processed/feature_engineered_data.csv", index=False
+    )
+    return feature_engineered_data
+
+
+if __name__ == "__main__":
+    main()
